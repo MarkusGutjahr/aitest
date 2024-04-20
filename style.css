@@ -1,0 +1,22 @@
+#container {
+    display: flex;
+}
+
+canvas {
+    border: 1px solid black;
+}
+
+.generationEntry {
+    margin-bottom: 5px;
+    padding: 5px;
+    background-color: #f0f0f0;
+}
+
+.firstCompletion {
+    background-color: green;
+}
+
+.generationContainer {
+    max-height: 1100px;
+    overflow-y: auto;
+}
