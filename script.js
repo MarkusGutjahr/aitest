@@ -1,5 +1,5 @@
 let population;
-let populationSize = 200;
+let populationSize = 150;
 let lifespan = 700;
 let generation = 1;
 let generationInfo = [];
@@ -162,7 +162,7 @@ function Rocket(dna) {
             this.vel.add(this.acc);
             this.pos.add(this.vel);
             this.acc.mult(0);
-            this.vel.limit(6);
+            this.vel.limit(5);
         }
     }
 
@@ -278,7 +278,7 @@ function DNA(genes) {
 
     this.mutation = function () {
         for (let i = 0; i < this.genes.length; i++) {
-            if(random(1) < 0.005) {
+            if(random(1) < 0.006) {
                 this.genes[i] = p5.Vector.random2D();
                 this.genes[i].setMag(maxfore);
             }
