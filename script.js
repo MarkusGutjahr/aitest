@@ -1,5 +1,6 @@
 let population;
-let lifespan = 900;
+let populationSize = 200;
+let lifespan = 700;
 let generation = 1;
 let generationInfo = [];
 let count = 0;
@@ -15,6 +16,7 @@ let firstCompletionIndex = -1;
 
 let maxGottenFitness = 0;
 let maxGottenLifespan = 0;
+let fastestTime = lifespan;
 
 function setup() {
     canvas = createCanvas(900, 1100);
@@ -43,6 +45,7 @@ function draw() {
     textSize(16);
     text("Max fitenss: " + maxGottenFitness.toFixed(3), width - 10, 40);
     text("Max lifespan: " + maxGottenLifespan, width - 10, 60);
+    text("Fastest Time: " + fastestTime, width - 10, 80);
     count++;
 
     if (!firstCompletion && checkForCompletion()) {
@@ -107,6 +110,7 @@ function Rocket(dna) {
     this.fitness = 0;
     this.completed = false;
     this.crashed = false;
+    this.time = lifespan;
 
     if(dna){
         this.dna = dna;
@@ -121,11 +125,16 @@ function Rocket(dna) {
     this.calcFitness = function () {
         let d = dist(this.pos.x, this.pos.y, target.x, target.y);
         this.fitness = map(d, 0, width, width, 0);
+        let timeFactor = map(count, 0, lifespan, 10, 1);
         if(this.completed) {
-            this.fitness *= 10;
-        }
-        if(this.crashed) {
-            this.fitness /= 10;
+            this.fitness *= timeFactor * 10;
+            if(fastestTime < count){
+                fastestTime = count;
+            }
+        }else if(this.crashed) {
+            this.fitness /= timeFactor;
+        }else if(!this.crashed && !this.completed) {
+            this.fitness /= timeFactor/2;
         }
     }
 
@@ -153,14 +162,14 @@ function Rocket(dna) {
             this.vel.add(this.acc);
             this.pos.add(this.vel);
             this.acc.mult(0);
-            this.vel.limit(4);
+            this.vel.limit(6);
         }
     }
 
     this.show = function () {
         push();
         noStroke();
-        fill(255, 150);
+        fill(255, 100);
         translate(this.pos.x, this.pos.y);
         rotate(this.vel.heading());
         rectMode(CENTER);
@@ -171,7 +180,7 @@ function Rocket(dna) {
 
 function Population() {
     this.rockets = [];
-    this.popsize = 100;
+    this.popsize = populationSize;
     this.matingpool = [];
 
     for (let i = 0; i < this.popsize; i++) {
@@ -269,7 +278,7 @@ function DNA(genes) {
 
     this.mutation = function () {
         for (let i = 0; i < this.genes.length; i++) {
-            if(random(1) < 0.01) {
+            if(random(1) < 0.005) {
                 this.genes[i] = p5.Vector.random2D();
                 this.genes[i].setMag(maxfore);
             }

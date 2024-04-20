@@ -18,5 +18,6 @@ canvas {
 
 .generationContainer {
     max-height: 1100px;
-    overflow-y: auto;
+    overflow-y: scroll;
+
 }
