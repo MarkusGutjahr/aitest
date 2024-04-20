@@ -1,6 +1,6 @@
 let population;
-let populationSize = 150;
-let lifespan = 700;
+let populationSize = 1500;
+let lifespan = 1000;
 let generation = 1;
 let generationInfo = [];
 let count = 0;
@@ -14,23 +14,22 @@ let canvas;
 let firstCompletion = false;
 let firstCompletionIndex = -1;
 
-let maxGottenFitness = 0;
 let maxGottenLifespan = 0;
 let fastestTime = lifespan;
 
 function setup() {
-    canvas = createCanvas(900, 1100);
+    canvas = createCanvas(900, 1200);
     canvas.parent("canvas");
 
     population = new Population();
 
     target = createVector(width/2, 100);
 
-    obstacles.push(new Obstacle(250, 300, 400, 20));
-    obstacles.push(new Obstacle(300, 750, 300, 20));
+    obstacles.push(new Obstacle(0, 300, 600, 20));
+    obstacles.push(new Obstacle(300, 900, 600, 20));
 
-    obstacles.push(new Obstacle(0, 450, 250, 20));
-    obstacles.push(new Obstacle(650, 450, 250, 20));
+    obstacles.push(new Obstacle(0, 700, 600, 20));
+    obstacles.push(new Obstacle(300, 500, 600, 20));
 }
 
 function draw() {
@@ -43,7 +42,7 @@ function draw() {
     textAlign(RIGHT);
     text("Lifespan: " + count, width - 10, 20);
     textSize(16);
-    text("Max fitenss: " + maxGottenFitness.toFixed(3), width - 10, 40);
+    text("Max fitenss: " + maxFit.toFixed(3), width - 10, 40);
     text("Max lifespan: " + maxGottenLifespan, width - 10, 60);
     text("Fastest Time: " + fastestTime, width - 10, 80);
     count++;
@@ -136,6 +135,7 @@ function Rocket(dna) {
         }else if(!this.crashed && !this.completed) {
             this.fitness /= timeFactor/2;
         }
+
     }
 
     this.update = function () {
@@ -197,10 +197,6 @@ function Population() {
         }
         maxFit = maxfit;
 
-        if(maxFit > maxGottenFitness){
-            maxGottenFitness = maxFit;
-        }
-
         //createP(maxfit);
         //console.log(this.rockets);
 
@@ -210,6 +206,7 @@ function Population() {
 
         this.matingpool = [];
         for (let i = 0; i < this.popsize; i++) {
+            //let n = floor(this.rockets[i].fitness * 100);
             let n = this.rockets[i].fitness * 100;
             for (let j = 0; j < n; j++) {
                 this.matingpool.push(this.rockets[i]);
