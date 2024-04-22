@@ -1,6 +1,6 @@
 let population;
 let populationSize = 1500;
-let lifespan = 1000;
+let lifespan = 700;
 let generation = 1;
 let generationInfo = [];
 let count = 0;
@@ -25,11 +25,13 @@ function setup() {
 
     target = createVector(width/2, 100);
 
-    obstacles.push(new Obstacle(0, 300, 600, 20));
-    obstacles.push(new Obstacle(300, 900, 600, 20));
+    obstacles.push(new Obstacle(200, 600, 500, 20));
 
-    obstacles.push(new Obstacle(0, 700, 600, 20));
-    obstacles.push(new Obstacle(300, 500, 600, 20));
+    //obstacles.push(new Obstacle(0, 300, 600, 20));
+    //obstacles.push(new Obstacle(300, 900, 600, 20));
+
+    //obstacles.push(new Obstacle(0, 700, 600, 20));
+    //obstacles.push(new Obstacle(300, 500, 600, 20));
 }
 
 function draw() {
@@ -275,7 +277,7 @@ function DNA(genes) {
 
     this.mutation = function () {
         for (let i = 0; i < this.genes.length; i++) {
-            if(random(1) < 0.006) {
+            if(random(1) < 0.01) {
                 this.genes[i] = p5.Vector.random2D();
                 this.genes[i].setMag(maxfore);
             }

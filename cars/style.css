@@ -1,9 +1,18 @@
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
 #container {
     display: flex;
 }
 
 canvas {
     border: 1px solid black;
+    width: 100%;
+    height: 100%;
 }
 
 .generationEntry {
@@ -19,5 +28,12 @@ canvas {
 .generationContainer {
     max-height: 1100px;
     overflow-y: scroll;
+}
 
+#safe-button {
+    font-size: 2em;
+    background-color: lightblue;
+    width: 6vw;
+    height: 3.5vh;
+    cursor: pointer;
 }

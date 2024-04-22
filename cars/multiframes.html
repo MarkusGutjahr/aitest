@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Title</title>
+
+    <style>
+        .iframe-container {
+            width: 400px;
+            height: 600px;
+            float: left;
+            margin-right: 10px;
+            overflow: hidden;
+        }
+
+        .iframe-container iframe {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: none;
+            -webkit-transform: scale(0.45);
+            -webkit-transform-origin: 0 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+    <div class="iframe-container">
+    </div>
+
+<script>
+    // JavaScript code to dynamically create iframes and adjust their sizes
+    const iframeContainers = document.querySelectorAll('.iframe-container');
+
+    iframeContainers.forEach(container => {
+        let iframe = document.createElement('iframe');
+        iframe.src = 'index.html';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        container.appendChild(iframe);
+    });
+</script>
+
+</body>
+</html>

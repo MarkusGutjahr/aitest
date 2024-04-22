@@ -1,3 +1,4 @@
+let savedPopulation ;
 let population;
 let populationSize = 1500;
 let lifespan = 1000;
@@ -21,7 +22,15 @@ function setup() {
     canvas = createCanvas(900, 1200);
     canvas.parent("canvas");
 
-    population = new Population();
+
+    if(savedPopulation){
+        console.log("Setup saved population");
+        population = savedPopulation;
+    }else {
+        console.log("Setup new population");
+        population = new Population();
+        console.log("popul:", population)
+    }
 
     target = createVector(width/2, 100);
 
@@ -78,8 +87,8 @@ function displayInfo() {
 }
 
 function checkForCompletion() {
-    for (let i = 0; i < population.rockets.length; i++) {
-        if (population.rockets[i].completed) {
+    for (let i = 0; i < population.cars.length; i++) {
+        if (population.cars[i].completed) {
             return true;
         }
     }
@@ -97,15 +106,86 @@ function Obstacle(x, y, w, h) {
         rect(this.x, this.y, this.w, this.h);
     }
 
-    this.checkCollision = function (rocketX, rocketY) {
-        return (rocketX > this.x && rocketX < this.x + this.w && rocketY > this.y && rocketY < this.y + this.h);
+    this.checkCollision = function (carX, carY) {
+        return (carX > this.x && carX < this.x + this.w && carY > this.y && carY < this.y + this.h);
     }
+
+    this.rayIntersection = function(rayStart, rayEnd) {
+        let minX = this.x;
+        let maxX = this.x + this.w;
+        let minY = this.y;
+        let maxY = this.y + this.h;
+
+        // Extend the AABB to include the screen edges
+        let screenMinX = 0;
+        let screenMaxX = width;
+        let screenMinY = 0;
+        let screenMaxY = height;
+
+        // Calculate intersection parameters as before
+        let directionX = rayEnd.x - rayStart.x;
+        let directionY = rayEnd.y - rayStart.y;
+        let originX = rayStart.x;
+        let originY = rayStart.y;
+
+        let tmin = (minX - originX) / directionX;
+        let tmax = (maxX - originX) / directionX;
+        let tymin = (minY - originY) / directionY;
+        let tymax = (maxY - originY) / directionY;
+
+        // Check for intersection with the screen boundaries
+        let screenTMinX = (screenMinX - originX) / directionX;
+        let screenTMaxX = (screenMaxX - originX) / directionX;
+        let screenTMinY = (screenMinY - originY) / directionY;
+        let screenTMaxY = (screenMaxY - originY) / directionY;
+
+        tmin = max(tmin, min(screenTMinX, screenTMaxX));
+        tmax = min(tmax, max(screenTMinX, screenTMaxX));
+        tymin = max(tymin, min(screenTMinY, screenTMaxY));
+        tymax = min(tymax, max(screenTMinY, screenTMaxY));
+
+
+        if (tmin > tmax) {
+            let temp = tmin;
+            tmin = tmax;
+            tmax = temp;
+        }
+
+        if (tymin > tymax) {
+            let temp = tymin;
+            tymin = tymax;
+            tymax = temp;
+        }
+
+        if (tmin > tymax || tymin > tmax) {
+            return null;
+        }
+
+        if (tymin > tmin) {
+            tmin = tymin;
+        }
+
+        if (tymax < tmax) {
+            tmax = tymax;
+        }
+
+        let intersectionX = originX + tmin * directionX;
+        let intersectionY = originY + tmin * directionY;
+
+        return createVector(intersectionX, intersectionY);
+    };
+
+
+
 }
 
-function Rocket(dna) {
-    this.pos = createVector(width/2, height);
+function Car(dna) {
+    this.pos = createVector(width/2, height-60);
     this.vel = createVector();
     this.acc = createVector();
+    this.angle = 0;
+    this.maxSpeed = 5;
+    this.maxForce = 0.1;
     this.fitness = 0;
     this.completed = false;
     this.crashed = false;
@@ -135,14 +215,15 @@ function Rocket(dna) {
         }else if(!this.crashed && !this.completed) {
             this.fitness /= timeFactor/2;
         }
-
     }
 
     this.update = function () {
+        //console.log("Updating car position");
         if (this.completed || this.crashed) {
             return;
         }
 
+        // Boundary detection
         if (this.pos.x > width || this.pos.x < 0 || this.pos.y > height || this.pos.y < 0) {
             this.crashed = true;
         } else if (dist(this.pos.x, this.pos.y, target.x, target.y) < 10) {
@@ -156,7 +237,58 @@ function Rocket(dna) {
                 }
             }
         }
+            // Obstacle avoidance using raycasting
+            let avoidanceForce = this.avoidObstacles();
+            this.applyForce(avoidanceForce);
+            //console.log("Avoidance force:", avoidanceForce);
 
+            // Apply steering behaviors (acceleration and turning)
+            let desired = createVector(); // Calculate desired velocity
+            //let steer = createVector(); // Calculate steering force
+
+
+            // Adjust steering based on DNA
+            let steerForce = this.dna.genes[count];
+            //console.log("Steer force:", steerForce); // Check steerForce
+
+            // Extract angle from steerForce vector
+            let angle = atan2(steerForce.y, steerForce.x);
+
+            // Create a vector manually
+            let steer = p5.Vector.fromAngle(angle);
+            //console.log("Steer:", steer)
+
+            steer.mult(2); // Adjust for steering force
+            //console.log("Steer after adjusting magnitude:", steer); // Check steer after adjusting magnitude
+
+            // Apply the steer vector as a force
+            this.applyForce(steer); // Check if steer is correctly applied as a force
+
+            // Check forces
+            //console.log("Steer after applying force:", steer); // Check steer after applying force
+
+
+
+
+        // Update angle based on velocity direction
+            this.angle = this.vel.heading();
+            //console.log("angle update:", this.angle);
+
+
+            // Update velocity, position, and angle
+            //console.log("Before velocity update:", this.vel);
+            this.vel.add(this.acc);
+            //console.log("After velocity update:", this.vel);
+
+            //console.log("Before position update:", this.pos);
+            this.pos.add(this.vel);
+            //console.log("After position update:", this.pos);
+
+            this.acc.mult(0);
+
+            this.vel.limit(this.maxSpeed);
+
+/*
         this.applyForce(this.dna.genes[count]);
         if(!this.completed && !this.crashed){
             this.vel.add(this.acc);
@@ -164,6 +296,45 @@ function Rocket(dna) {
             this.acc.mult(0);
             this.vel.limit(5);
         }
+ */
+
+    }
+
+    this.avoidObstacles = function () {
+        let avoidance = createVector();
+        let rays = 36; // Number of rays for raycasting
+        let angleIncrement = TWO_PI / rays;
+
+        for (let i = 0; i < rays; i++) {
+            let rayAngle = this.vel.heading() - HALF_PI + i * angleIncrement; // Start from the left side of the car
+            let rayDirection = createVector(cos(rayAngle), sin(rayAngle));
+            let maxRayLength = 100; // Maximum length of the ray
+
+            // Cast ray and check for intersections with obstacles
+            let rayEnd = p5.Vector.add(this.pos, p5.Vector.mult(rayDirection, maxRayLength));
+            let closestIntersect = null;
+            let closestDist = maxRayLength;
+
+            for (let j = 0; j < obstacles.length; j++) {
+                let intersect = obstacles[j].rayIntersection(this.pos, rayEnd);
+                if (intersect) {
+                    let d = p5.Vector.dist(this.pos, intersect);
+                    if (d < closestDist) {
+                        closestDist = d;
+                        closestIntersect = intersect;
+                    }
+                }
+            }
+
+            // If an intersection is found, steer away from the obstacle
+            if (closestIntersect) {
+                let steerForce = p5.Vector.sub(closestIntersect, this.pos);
+                steerForce.setMag(map(closestDist, 0, maxRayLength, this.maxForce, 0)); // Inverse proportion to distance
+                avoidance.add(steerForce);
+            }
+        }
+        //console.log(avoidance);
+        return avoidance;
     }
 
     this.show = function () {
@@ -179,65 +350,71 @@ function Rocket(dna) {
 }
 
 function Population() {
-    this.rockets = [];
+    this.cars = [];
     this.popsize = populationSize;
     this.matingpool = [];
 
+
+
+    console.log('Creating a new population...');
     for (let i = 0; i < this.popsize; i++) {
-        this.rockets[i] = new Rocket();
+        this.cars[i] = new Car();
     }
+    //console.log(this.cars);
+
 
     this.evaluate = function() {
         let maxfit = 0;
         for (let i = 0; i < this.popsize; i++) {
-            this.rockets[i].calcFitness();
-            if(this.rockets[i].fitness > maxfit){
-                maxfit = this.rockets[i].fitness;
+            this.cars[i].calcFitness();
+            if(this.cars[i].fitness > maxfit){
+                maxfit = this.cars[i].fitness;
             }
         }
         maxFit = maxfit;
 
         //createP(maxfit);
-        //console.log(this.rockets);
+        //console.log(this.cars);
 
         for (let i = 0; i < this.popsize; i++) {
-            this.rockets[i].fitness /= maxfit;
+            this.cars[i].fitness /= maxfit;
         }
 
         this.matingpool = [];
         for (let i = 0; i < this.popsize; i++) {
-            //let n = floor(this.rockets[i].fitness * 100);
-            let n = this.rockets[i].fitness * 100;
+            //let n = floor(this.cars[i].fitness * 100);
+            let n = this.cars[i].fitness * 100;
             for (let j = 0; j < n; j++) {
-                this.matingpool.push(this.rockets[i]);
+                this.matingpool.push(this.cars[i]);
             }
         }
     }
 
     this.selection = function () {
-        let newRockets = [];
-        for (let i = 0; i < this.rockets.length; i++) {
+        let newCars = [];
+        for (let i = 0; i < this.cars.length; i++) {
             let parentA = random(this.matingpool).dna;
             let parentB = random(this.matingpool).dna;
             let child = parentA.crossover(parentB);
             child.mutation();
-            newRockets[i] = new Rocket(child);
+            newCars[i] = new Car(child);
         }
-        this.rockets = newRockets;
+        this.cars = newCars;
     }
 
     this.run = function (){
+        //console.log("Running population");
         let allCrashed = true;
         let allCompleted = true;
 
         for (let i = 0; i < this.popsize; i++) {
-            this.rockets[i].update();
-            this.rockets[i].show();
+            this.cars[i].update();
+            this.cars[i].show();
 
-            if (!this.rockets[i].completed) {
+            if (!this.cars[i].completed) {
                 allCompleted = false;
             }
-            if (!this.rockets[i].crashed) {
+            if (!this.cars[i].crashed) {
                 allCrashed = false;
             }
         }
@@ -246,7 +423,6 @@ function Population() {
             nextGeneration();
         }
     }
-
 }
 
 function DNA(genes) {
@@ -275,13 +451,12 @@ function DNA(genes) {
 
     this.mutation = function () {
         for (let i = 0; i < this.genes.length; i++) {
-            if(random(1) < 0.006) {
+            if(random(1) < 0.01) {
                 this.genes[i] = p5.Vector.random2D();
                 this.genes[i].setMag(maxfore);
             }
         }
     }
-
 }
 
 function nextGeneration() {
@@ -299,3 +474,63 @@ function nextGeneration() {
     count = 0;
     generation++;
 }
+
+// Saving results
+function saveResults() {
+    // Define the URL of the server endpoint
+    const url = 'http://localhost:3000/save';
+
+    // Create the request options
+    const options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(population)
+    };
+
+    // Send the POST request to the server
+    fetch(url, options)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to save population data');
+            }
+            console.log('Population data saved successfully');
+            console.log("Saved-Population", population);
+        })
+        .catch(error => {
+            console.error('Error saving population data:', error);
+        });
+}
+
+// Loading results
+function loadResults() {
+    return fetch('http://localhost:3000/load')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to load population data');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Check if the received data is in the expected format
+            if (data && data.cars && Array.isArray(data.cars) && data.popsize && data.matingpool && Array.isArray(data.matingpool)) {
+                // Create a new Population object and update it with the loaded data
+                const loadedPopulation = new Population();
+                loadedPopulation.cars = data.cars;
+                loadedPopulation.popsize = data.popsize;
+                loadedPopulation.matingpool = data.matingpool;
+
+                console.log('Population data loaded successfully:', loadedPopulation);
+                return loadedPopulation;
+            } else {
+                throw new Error('Invalid population data format');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading population data:', error);
+            return null;
+        });
+}
+
+
