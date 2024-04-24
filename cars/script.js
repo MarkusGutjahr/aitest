@@ -6,7 +6,8 @@ let generation = 1;
 let generationInfo = [];
 let count = 0;
 let target;
-let maxfore = 0.15;
+let maxforce = 0.15;
+let mutationRate = 0.03;
 
 let obstacles = [];
 let maxFit = 0;
@@ -25,6 +26,36 @@ function setup() {
     canvas = createCanvas(900, 1200);
     canvas.parent("canvas");
 
+    target = createVector(width/2, 100);
+
+    checkpoints.push(new Checkpoint(600,300, 300, 20));
+    checkpoints.push(new Checkpoint(0,500, 300, 20));
+    checkpoints.push(new Checkpoint(600,700, 300, 20));
+    checkpoints.push(new Checkpoint(0,900, 300, 20));
+
+
+    checkpoints.push(new Checkpoint(300,720, 20, 180));
+    checkpoints.push(new Checkpoint(580,720, 20, 180));
+
+    checkpoints.push(new Checkpoint(300,520, 20, 180));
+    checkpoints.push(new Checkpoint(580,520, 20, 180));
+
+    checkpoints.push(new Checkpoint(300,320, 20, 180));
+    checkpoints.push(new Checkpoint(580,320, 20, 180));
+
+    checkpoints.push(new Checkpoint(300,920, 20, 290));
+    checkpoints.push(new Checkpoint(580,0, 20, 300));
+
+
+
+    obstacles.push(new Obstacle(0, 300, 600, 20));
+    obstacles.push(new Obstacle(300, 900, 600, 20));
+
+    obstacles.push(new Obstacle(0, 700, 600, 20));
+    obstacles.push(new Obstacle(300, 500, 600, 20));
+
+
+
 
     if(savedPopulation){
         console.log("Setup saved population");
@@ -34,25 +65,6 @@ function setup() {
         population = new Population();
         console.log("popul:", population)
     }
-
-    target = createVector(width/2, 100);
-
-    checkpoints.push(new Checkpoint(700,310, checkpointRadius, checkpointRadius));
-    checkpoints.push(new Checkpoint(200,510, checkpointRadius, checkpointRadius));
-    checkpoints.push(new Checkpoint(700,710, checkpointRadius, checkpointRadius));
-    checkpoints.push(new Checkpoint(200,910, checkpointRadius, checkpointRadius));
-
-
-    checkpoints.push(new Checkpoint(450,810, checkpointRadius, checkpointRadius));
-    checkpoints.push(new Checkpoint(450,610, checkpointRadius, checkpointRadius));
-    checkpoints.push(new Checkpoint(450,410, checkpointRadius, checkpointRadius));
-
-
-    obstacles.push(new Obstacle(0, 300, 600, 20));
-    obstacles.push(new Obstacle(300, 900, 600, 20));
-
-    obstacles.push(new Obstacle(0, 700, 600, 20));
-    obstacles.push(new Obstacle(300, 500, 600, 20));
 }
 
 function draw() {
@@ -121,8 +133,8 @@ function Checkpoint (x, y, w, h) {
     this.h = h;
 
     this.show = function () {
-        fill('lightblue');
-        ellipse(this.x, this.y, this.w, this.h);
+        fill(255, 20);
+        rect(this.x, this.y, this.w, this.h);
     }
 
     this.checkCollision = function (carX, carY) {
@@ -227,7 +239,7 @@ function Car(dna) {
     this.crashed = false;
     this.time = lifespan;
 
-    this.checkpointsCleared = 0;
+    this.checkpointsMissing = checkpoints.length + 1;
     this.nearestCheckpoint = false;
 
     if(dna){
@@ -245,8 +257,9 @@ function Car(dna) {
         this.fitness = map(d, 0, width, width, 0);
         let timeFactor = map(count, 0, lifespan, 10, 1);
 
-        this.fitness /= 5;
-        this.fitness *= this.checkpointsCleared;
+        //this.fitness /= 5;
+        //this.fitness *= this.checkpointsCleared;
+        this.fitness /= this.checkpointsMissing;
 
         //console.log("fitness before:", this.fitness)
         if(this.completed) {
@@ -255,9 +268,11 @@ function Car(dna) {
                 fastestTime = count;
             }
         }else if(this.crashed) {
-            this.fitness /= (timeFactor * 10);
+            //this.fitness /= (timeFactor * 10);
+            this.fitness /=  10;
         }else if(!this.crashed && !this.completed) {
-            this.fitness /= timeFactor * 6;
+            //this.fitness /= timeFactor * 6;
+            this.fitness /=  6;
         }
         //console.log("d:", d)
         //console.log("timefactor:", timeFactor)
@@ -353,35 +368,36 @@ function Car(dna) {
 
             // Update velocity, position, and angle
             //console.log("Before velocity update:", this.vel);
-            this.vel.add(this.acc);
+            //this.vel.add(this.acc);
             //console.log("After velocity update:", this.vel);
 
             //console.log("Before position update:", this.pos);
-            this.pos.add(this.vel);
+            //this.pos.add(this.vel);
             //console.log("After position update:", this.pos);
 
-            this.acc.mult(0);
+            //this.acc.mult(0);
 
-            this.vel.limit(this.maxSpeed);
+            //this.vel.limit(this.maxSpeed);
 
 
         this.nearestCheckpoint = this.findNearestCheckpoint(this.pos, checkpoints);
-        if (p5.Vector.dist(this.pos, createVector(this.nearestCheckpoint.x, this.nearestCheckpoint.y)) < checkpointRadius) {
+        //if (p5.Vector.dist(this.pos, createVector(this.nearestCheckpoint.x, this.nearestCheckpoint.y)) < checkpointRadius) {
+        if (this.nearestCheckpoint.checkCollision(this.pos.x, this.pos.y)) {
             // Check if the checkpoint hasn't been cleared before
             if (!this.nearestCheckpoint.cleared) {
-                this.checkpointsCleared++;
+                this.checkpointsMissing--;
                 // Award extra points to the car
                 // Mark the checkpoint as cleared
                 this.nearestCheckpoint.cleared = true;
 
                 // If all checkpoints are cleared, set completed to true
-                if (this.checkpointsCleared === checkpoints.length) {
+                if (this.checkpointsMissing === 1) {
                     this.completed = true;
                 }
             }
         }
 
-/*
+
         this.applyForce(this.dna.genes[count]);
         if(!this.completed && !this.crashed){
             this.vel.add(this.acc);
@@ -389,7 +405,7 @@ function Car(dna) {
             this.acc.mult(0);
             this.vel.limit(5);
         }
- */
+
     }
 
     this.avoidObstacles = function () {
@@ -478,9 +494,9 @@ function Population() {
             this.cars[i].calcFitness();
             if(this.cars[i].fitness > maxfit){
                 maxfit = this.cars[i].fitness;
+                maxFit = maxfit;
             }
         }
-        maxFit = maxfit;
 
         //createP(maxfit);
         //console.log(this.cars);
@@ -489,8 +505,8 @@ function Population() {
             this.cars[i].fitness /= maxfit;
         }
         for (let i = 0; i < this.popsize; i++) {
-            //let n = floor(this.cars[i].fitness * 100);
-            let n = this.cars[i].fitness * 100;
+            let n = floor(this.cars[i].fitness * 100);
+            //let n = this.cars[i].fitness * 100;
             for (let j = 0; j < n; j++) {
                 this.matingpool.push(this.cars[i]);
             }
@@ -500,11 +516,20 @@ function Population() {
     this.selection = function () {
         let newCars = [];
         for (let i = 0; i < this.cars.length; i++) {
-            let parentA = random(this.matingpool).dna;
-            let parentB = random(this.matingpool).dna;
-            let child = parentA.crossover(parentB);
-            child.mutation();
-            newCars[i] = new Car(child);
+            let parentA = random(this.matingpool);
+            let parentB = random(this.matingpool);
+
+            // Check if parentA and parentB are valid before accessing dna property
+            if (parentA && parentA.dna && parentB && parentB.dna) {
+                let child = parentA.dna.crossover(parentB.dna);
+                child.mutation();
+                newCars[i] = new Car(child);
+            } else {
+                // Handle the case where parentA or parentB is invalid
+                console.error("Invalid parents:", parentA, parentB);
+                // Create a new car with random DNA as fallback
+                newCars[i] = new Car();
+            }
         }
         this.cars = newCars;
     }
@@ -539,7 +564,7 @@ function DNA(genes) {
         this.genes = [];
         for (let i = 0; i < lifespan; i++) {
             this.genes[i] = p5.Vector.random2D();
-            this.genes[i].setMag(maxfore);
+            this.genes[i].setMag(maxforce);
         }
     }
 
@@ -558,9 +583,9 @@ function DNA(genes) {
 
     this.mutation = function () {
         for (let i = 0; i < this.genes.length; i++) {
-            if(random(1) < 0.03) {
+            if(random(1) < mutationRate) {
                 this.genes[i] = p5.Vector.random2D();
-                this.genes[i].setMag(maxfore);
+                this.genes[i].setMag(maxforce);
             }
         }
     }
